@@ -7,6 +7,9 @@ import {
   PromptConfigsView,
   PromptLibrarySeedResult,
   Selection,
+  TransferFile,
+  TransferImportResult,
+  TransferPreview,
   type GeneralSettings as GeneralSettingsValue,
   type GeneralSettingsPatch,
   type MigrationReport as MigrationReportValue,
@@ -24,6 +27,10 @@ import {
   type Selection as SelectionValue,
   type SetDefaultModelInput,
   type SetDefaultPromptInput,
+  type TransferExportOptions,
+  type TransferFile as TransferFileValue,
+  type TransferImportResult as TransferImportResultValue,
+  type TransferPreview as TransferPreviewValue,
 } from '@/contract';
 
 import { sendMessage } from './messaging';
@@ -118,4 +125,22 @@ export async function ensurePromptLibrary(): Promise<PromptLibrarySeedResultValu
   return PromptLibrarySeedResult.parse(
     await sendMessage('prompt-configs.ensureLibrary', undefined),
   );
+}
+
+export async function exportTransferConfig(
+  options: TransferExportOptions,
+): Promise<TransferFileValue> {
+  return TransferFile.parse(await sendMessage('transfer.export', options));
+}
+
+export async function previewTransferImport(
+  file: TransferFileValue,
+): Promise<TransferPreviewValue> {
+  return TransferPreview.parse(await sendMessage('transfer.preview', file));
+}
+
+export async function importTransferConfig(
+  file: TransferFileValue,
+): Promise<TransferImportResultValue> {
+  return TransferImportResult.parse(await sendMessage('transfer.import', file));
 }

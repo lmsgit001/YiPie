@@ -19,6 +19,12 @@ import {
 } from './mutations';
 import { PromptConfigsView, PromptLibrarySeedResult } from './prompt-config';
 import { Selection } from './selection';
+import {
+  TransferExportOptions,
+  TransferFile,
+  TransferImportResult,
+  TransferPreview,
+} from './transfer';
 
 /**
  * The control-plane contract. Both sides of the extension derive their types
@@ -42,6 +48,19 @@ export const rpcContract = {
   'migration.run': {
     input: z.void(),
     output: MigrationReport,
+    write: true,
+  },
+  'transfer.export': {
+    input: TransferExportOptions,
+    output: TransferFile,
+  },
+  'transfer.preview': {
+    input: TransferFile,
+    output: TransferPreview,
+  },
+  'transfer.import': {
+    input: TransferFile,
+    output: TransferImportResult,
     write: true,
   },
   'selection.load': {
@@ -124,6 +143,9 @@ export interface ProtocolMap {
   'settings.load': () => Promise<GeneralSettings>;
   'settings.save': (patch: GeneralSettingsPatch) => Promise<GeneralSettings>;
   'migration.run': () => Promise<MigrationReport>;
+  'transfer.export': (options: TransferExportOptions) => Promise<TransferFile>;
+  'transfer.preview': (file: TransferFile) => Promise<TransferPreview>;
+  'transfer.import': (file: TransferFile) => Promise<TransferImportResult>;
   'selection.load': () => Promise<Selection>;
   'selection.setDefaultModel': (input: SetDefaultModelInput) => Promise<Selection>;
   'selection.setDefaultPrompt': (input: SetDefaultPromptInput) => Promise<Selection>;

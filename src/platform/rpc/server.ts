@@ -11,6 +11,8 @@ import {
   PromptConfigUpdateInput,
   SetDefaultModelInput,
   SetDefaultPromptInput,
+  TransferExportOptions,
+  TransferFile,
   type GeneralSettings as GeneralSettingsValue,
   type MigrationReport as MigrationReportValue,
   type GeneralSettingsPatch as GeneralSettingsPatchValue,
@@ -20,6 +22,9 @@ import {
   type PromptConfigsView as PromptConfigsViewValue,
   type PromptLibrarySeedResult as PromptLibrarySeedResultValue,
   type Selection as SelectionValue,
+  type TransferFile as TransferFileValue,
+  type TransferImportResult as TransferImportResultValue,
+  type TransferPreview as TransferPreviewValue,
 } from '@/contract';
 
 import { onMessage } from './messaging';
@@ -50,6 +55,9 @@ export interface RpcHandlers {
   movePromptConfig: (input: PromptConfigMoveInput) => Promise<PromptConfigsViewValue>;
   ensurePromptLibrary: () => Promise<PromptLibrarySeedResultValue>;
   runMigrations: () => Promise<MigrationReportValue>;
+  exportTransfer: (options: TransferExportOptions) => Promise<TransferFileValue>;
+  previewTransferImport: (file: TransferFileValue) => Promise<TransferPreviewValue>;
+  importTransfer: (file: TransferFileValue) => Promise<TransferImportResultValue>;
 }
 
 /**
@@ -105,6 +113,16 @@ export function registerRpcHandlers(handlers: RpcHandlers): void {
   );
 
   onMessage('migration.run', guardedNoInput(handlers.runMigrations));
+
+  onMessage(
+    'transfer.export',
+    guarded('transfer.export', TransferExportOptions, handlers.exportTransfer),
+  );
+  onMessage(
+    'transfer.preview',
+    guarded('transfer.preview', TransferFile, handlers.previewTransferImport),
+  );
+  onMessage('transfer.import', guarded('transfer.import', TransferFile, handlers.importTransfer));
 
   onMessage('selection.load', guardedNoInput(handlers.loadSelection));
   onMessage(

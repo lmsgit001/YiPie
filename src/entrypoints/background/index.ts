@@ -1,3 +1,4 @@
+import { browser } from 'wxt/browser';
 import { defineBackground } from 'wxt/utils/define-background';
 
 import { outcomesNeedingAttention } from '@/contract';
@@ -29,6 +30,11 @@ import {
   setDefaultModel,
   setDefaultPrompt,
 } from '@/platform/settings/selection-service';
+import {
+  exportTransferConfig,
+  importTransferConfig,
+  previewTransferImport,
+} from '@/platform/settings/transfer-service';
 import { wxtStore } from '@/platform/storage/wxt-store';
 
 const logger = createLogger('background');
@@ -83,6 +89,18 @@ export default defineBackground(() => {
     ensurePromptLibrary: () => seedPromptLibraryIfNeeded(wxtStore),
 
     runMigrations: () => runMigrations(wxtStore),
+
+    // The manifest version is read here rather than inside the service, so the
+    // service stays free of browser globals and testable in plain node.
+    exportTransfer: (options) =>
+      exportTransferConfig(wxtStore, {
+        includeSecrets: options.includeSecrets,
+        appVersion: browser.runtime.getManifest().version,
+      }),
+    // The preview is pure, so this resolves immediately; the RPC surface is
+    // asynchronous by nature, which is the only reason for the wrapper.
+    previewTransferImport: (file) => Promise.resolve(previewTransferImport(file)),
+    importTransfer: (file) => importTransferConfig(file, wxtStore),
   });
 
   // Bring storage up to this build's schema versions. There is nothing to do while every
