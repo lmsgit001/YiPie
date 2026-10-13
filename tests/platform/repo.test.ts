@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
-import { createMemoryStore } from '../helpers/memory-store';
-
 import { readValidated, writeValidated } from '@/platform/storage/repo';
+
+import { createMemoryStore } from '../helpers/memory-store';
 
 const Schema = z.object({ version: z.literal(1), data: z.object({ theme: z.string() }) });
 

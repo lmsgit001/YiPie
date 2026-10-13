@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 
-import { createMemoryStore } from '../helpers/memory-store';
-
 import { GENERAL_SETTINGS_STORAGE_KEY } from '@/contract';
 import {
   loadGeneralSettings,
   saveGeneralSettings,
 } from '@/platform/settings/general-settings-service';
+
+import { createMemoryStore } from '../helpers/memory-store';
 
 describe('general settings service', () => {
   it('returns defaults when nothing is stored', async () => {

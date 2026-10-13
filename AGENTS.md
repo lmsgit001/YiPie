@@ -42,6 +42,8 @@ contract → domain → platform → entrypoints
 
 反向依赖由 ESLint 的 `import-x/no-restricted-paths` 拦截。
 
+这条规则依赖 `eslint.config.js` 里的 `settings['import-x/resolver']`（扩展名含 `.ts`，并从 `tsconfig.json` 读 `@/*` 映射）：**规则解析不了的 import 会被静默跳过**，删掉那段设置等于把分层约束变成摆设（阶段 1 才发现它此前一直空转，同一原因也让 `import-x/order` 的分类不准）。
+
 ### 3. 存储只有一条写队列
 
 所有持久化结构都是「整对象读改写」。写入必须经 `platform/storage` 的仓库函数，由

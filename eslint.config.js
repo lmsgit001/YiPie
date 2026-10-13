@@ -10,6 +10,8 @@
 //    typescript-eslint peer range is `>=4.8.4 <6.1.0`, so moving to the native
 //    TypeScript 7 compiler would mean giving up type-aware linting. Revisit
 //    when typescript-eslint widens that range.
+import path from 'node:path';
+
 import jsxA11y from 'eslint-plugin-jsx-a11y';
 import reactHooks from 'eslint-plugin-react-hooks';
 import importX from 'eslint-plugin-import-x';
@@ -30,6 +32,19 @@ export default tseslint.config(
   ...tseslint.configs.recommendedTypeChecked,
   {
     files: ['**/*.{ts,tsx}'],
+    // Resolution settings matter beyond convenience: `import-x/no-restricted-paths`
+    // silently skips an import it cannot resolve, so without this the layer rules
+    // below are inert. The default resolver only knows .js/.json, and TypeScript
+    // `paths` aliases need the tsconfig — so both are wired up here. A zone that
+    // does not fire is worse than no zone: it reads as a guarantee.
+    settings: {
+      'import-x/resolver': {
+        node: {
+          extensions: ['.ts', '.tsx', '.js', '.jsx', '.json'],
+          tsconfig: { configFile: path.resolve(import.meta.dirname, 'tsconfig.json') },
+        },
+      },
+    },
     languageOptions: {
       parserOptions: {
         // `projectService` (not `project`) so files are only type-checked when
@@ -90,6 +105,32 @@ export default tseslint.config(
               target: './src/platform',
               from: './src/entrypoints',
               message: 'platform must not import entrypoints',
+            },
+            // The storage adapter has exactly one caller: the background, which
+            // assembles it. Everything else goes through the RPC client, so a
+            // bypass of the repository (and therefore of the queue in tx.ts)
+            // fails at lint time instead of in review. `from` names the file
+            // rather than the directory on purpose — the `StorageLike`
+            // interface stays importable from anywhere.
+            {
+              target: './src/features',
+              from: './src/platform/storage/wxt-store.ts',
+              message: 'storage writes must go through platform/storage/repo, not the adapter',
+            },
+            {
+              target: './src/entrypoints/options',
+              from: './src/platform/storage/wxt-store.ts',
+              message: 'storage writes must go through platform/storage/repo, not the adapter',
+            },
+            {
+              target: './src/entrypoints/popup',
+              from: './src/platform/storage/wxt-store.ts',
+              message: 'storage writes must go through platform/storage/repo, not the adapter',
+            },
+            {
+              target: './src/entrypoints/content',
+              from: './src/platform/storage/wxt-store.ts',
+              message: 'storage writes must go through platform/storage/repo, not the adapter',
             },
           ],
         },

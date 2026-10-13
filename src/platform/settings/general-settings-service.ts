@@ -1,5 +1,3 @@
-import type { StorageLike } from '@/platform/storage/types';
-
 import {
   createDefaultGeneralSettings,
   GeneralSettings,
@@ -12,6 +10,8 @@ import {
 import { createLogger } from '@/platform/logger';
 import { readValidated, writeValidated } from '@/platform/storage/repo';
 import { enqueue } from '@/platform/storage/tx';
+
+import type { StorageLike } from '@/platform/storage/types';
 
 const logger = createLogger('settings');
 

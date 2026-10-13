@@ -2,6 +2,25 @@
 
 ## [Unreleased]
 
+### 模型配置（阶段 1 · 第一片）
+
+- `src/contract/model-config.ts`：`ModelConfig` 契约（类型 / 运行时校验 / 存储信封同源）+ `ModelConfigPatch`
+  - 行的归类与回写（`classifyModelConfigRows` / `toStoredRows`）
+- `src/contract/mutations.ts`：只暴露变更面（add / update / remove / move），不存在「整表覆盖」的方法
+- `src/platform/settings/model-configs-service.ts`：读改写全部经单一写队列；认不出的行隔离到
+  `unrecognized` 并原样写回；读不出来的数据只降级不覆盖
+- RPC：`contract/rpc.ts` 登记 5 个方法，`platform/rpc/server.ts` 统一入参校验，`platform/rpc/client.ts` 校验返回
+- 测试新增 21 个用例（契约 10 + 服务 11），全仓 41 个
+
+### 修复
+
+- **`import-x/no-restricted-paths` 此前一直空转**：默认解析器不认 `.ts`，也读不到 tsconfig 的 `@/*` 映射，
+  而规则遇到解析不了的 import 会静默跳过——「反向依赖由 ESLint 拦截」实际没有拦截任何东西。补上
+  `settings['import-x/resolver']`（扩展名含 `.ts` + `tsconfig.json`）后才真正生效
+- 随之按 `import-x/order` 修正 6 个既有文件的导入顺序（仅顺序，无语义变化）
+- 新增封口 zone：`features/**`、`options`、`popup`、`content` 不得直接 import 存储适配器，
+  background 是唯一允许的装配点；用故意违规的探针文件验证过规则确实会报错
+
 ### 文档
 
 - 新增 `docs/development-plan.md`：阶段 1–6 的交付物与验收标准、测试策略、数据契约与迁移策略、

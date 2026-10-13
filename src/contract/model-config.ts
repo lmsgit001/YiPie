@@ -1,0 +1,145 @@
+import { z } from 'zod';
+
+/**
+ * The single source of truth for model configurations: the TypeScript type, the
+ * runtime validation and the stored envelope all derive from this file, exactly
+ * as `general-settings.ts` does for settings.
+ *
+ * Two different things are treated differently here, and the difference is the
+ * point of the file:
+ *
+ *  - A *row* that does not match `ModelConfig` is never repaired and never
+ *    dropped. It is set aside in `unrecognized` and written back verbatim. The
+ *    project this replaces ran a hand-written cleanup on write and deleted every
+ *    row it could not recognise, API keys included.
+ *  - Unknown *keys inside* a row that does match are stripped, which is the
+ *    contract-first behaviour `GeneralSettings` already has and a test pins. A
+ *    row is therefore either recognised as a whole (and normalised) or preserved
+ *    as a whole (and untouched); there is no state where half a row is rewritten.
+ */
+
+/** Bumped only when a stored shape changes incompatibly; drives migrations. */
+export const MODEL_CONFIGS_VERSION = 1;
+
+export const MODEL_CONFIGS_STORAGE_KEY = 'local:model-configs';
+
+/**
+ * v1 speaks exactly one wire protocol to providers: the OpenAI-compatible one.
+ * `ollama` is a label for how its base URL is normalised, not a second
+ * implementation — see docs/development-plan.md 4.3.
+ */
+export const ProviderId = z.enum(['openai-compatible', 'ollama']);
+export type ProviderId = z.infer<typeof ProviderId>;
+
+/**
+ * Every field carries a default where a sensible one exists, so `z.infer` is
+ * total: a record written by an older build reads back complete instead of
+ * surfacing `undefined` into the UI.
+ */
+export const ModelConfig = z.object({
+  /** The only handle the UI has for a later update / remove / move. */
+  id: z.string().min(1),
+  name: z.string().min(1),
+  providerId: ProviderId.default('openai-compatible'),
+  /** Origin plus path, e.g. `https://api.example.com/v1`. */
+  baseURL: z.string().min(1),
+  /**
+   * Empty means "this endpoint needs no key" (a local server). Never logged and
+   * never exported unless the user explicitly asks for credentials.
+   */
+  apiKey: z.string().default(''),
+  modelId: z.string().min(1),
+  headers: z.record(z.string(), z.string()).default({}),
+  /**
+   * Extra provider-specific request fields. Treated as sensitive as well: it is
+   * user-authored JSON that the rest of the code never interprets.
+   */
+  extraBody: z.record(z.string(), z.unknown()).default({}),
+  /** Left unset when the provider's own default should apply. */
+  contextWindow: z.number().int().positive().optional(),
+  maxOutputTokens: z.number().int().positive().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+});
+
+export type ModelConfig = z.infer<typeof ModelConfig>;
+export type ModelConfigInput = z.input<typeof ModelConfig>;
+
+/**
+ * A partial update as sent over the wire. Spelled out field by field rather than
+ * derived with `.partial()`, for the same reason `GeneralSettingsPatch` is:
+ * `.partial()` only makes a field optional, it does not drop the field's
+ * default, so `ModelConfig.partial().parse({})` returns every default. An update
+ * that only renames a model would then silently reset its endpoint, its headers
+ * and its API key.
+ */
+export const ModelConfigPatch = z.object({
+  name: z.string().min(1).optional(),
+  providerId: ProviderId.optional(),
+  baseURL: z.string().min(1).optional(),
+  apiKey: z.string().optional(),
+  modelId: z.string().min(1).optional(),
+  headers: z.record(z.string(), z.string()).optional(),
+  extraBody: z.record(z.string(), z.unknown()).optional(),
+  contextWindow: z.number().int().positive().optional(),
+  maxOutputTokens: z.number().int().positive().optional(),
+  temperature: z.number().min(0).max(2).optional(),
+});
+
+export type ModelConfigPatch = z.infer<typeof ModelConfigPatch>;
+
+/**
+ * The versioned envelope actually written to storage.
+ *
+ * `rows` is typed `unknown[]` on purpose. Validating the rows here would turn
+ * "one unreadable row" into "the whole list is unreadable", which is precisely
+ * the failure that loses data: the list would be reported invalid, replaced by
+ * an empty one, and the next save would persist that emptiness.
+ */
+export const ModelConfigsRecord = z.object({
+  version: z.literal(MODEL_CONFIGS_VERSION),
+  data: z.object({ rows: z.array(z.unknown()) }),
+});
+
+export type ModelConfigsRecord = z.infer<typeof ModelConfigsRecord>;
+
+/** What the layers above storage see: the usable list, plus what was set aside. */
+export const ModelConfigsView = z.object({
+  models: z.array(ModelConfig),
+  unrecognized: z.array(z.unknown()),
+});
+
+export type ModelConfigsView = z.infer<typeof ModelConfigsView>;
+
+export function createEmptyModelConfigsView(): ModelConfigsView {
+  return { models: [], unrecognized: [] };
+}
+
+/**
+ * Split stored rows into the ones we understand and the ones we must keep as-is.
+ * A row that fails `ModelConfig` is reported, not dropped; the caller decides
+ * whether to log it, and storage keeps the original.
+ */
+export function classifyModelConfigRows(rows: readonly unknown[]): ModelConfigsView {
+  const models: ModelConfig[] = [];
+  const unrecognized: unknown[] = [];
+
+  for (const row of rows) {
+    const parsed = ModelConfig.safeParse(row);
+    if (parsed.success) models.push(parsed.data);
+    else unrecognized.push(row);
+  }
+
+  return { models, unrecognized };
+}
+
+/**
+ * The inverse: recognised configs first, set-aside rows appended verbatim.
+ *
+ * The set-aside rows keep their content but not their position relative to the
+ * configs. That position is not observable — they are never rendered, and `move`
+ * only reorders configs — while the thing that does matter is pinned by a test:
+ * writing the list back cannot lose one.
+ */
+export function toStoredRows(view: ModelConfigsView): unknown[] {
+  return [...view.models, ...view.unrecognized];
+}
