@@ -7,6 +7,11 @@
  * still had writers that bypassed both. There is exactly one queue now, and
  * repository writes go through it; nothing else is allowed to call the storage
  * adapter's `setItem`.
+ *
+ * One rule for callers: do not call an enqueued write from *inside* a task.
+ * The inner task waits for the queue, the queue waits for the outer task, and
+ * the outer task waits for the inner one. Compose enqueued operations from
+ * outside the queue (assembly, or a plain sequence), never from within.
  */
 let tail: Promise<unknown> = Promise.resolve();
 

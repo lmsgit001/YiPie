@@ -1,6 +1,11 @@
 import {
   GeneralSettings,
+  ModelConfigRemoveResult,
   ModelConfigsView,
+  PromptConfigRemoveResult,
+  PromptConfigsView,
+  PromptLibrarySeedResult,
+  Selection,
   type GeneralSettings as GeneralSettingsValue,
   type GeneralSettingsPatch,
   type ModelConfigAddInput,
@@ -8,6 +13,15 @@ import {
   type ModelConfigRemoveInput,
   type ModelConfigsView as ModelConfigsViewValue,
   type ModelConfigUpdateInput,
+  type PromptConfigAddInput,
+  type PromptConfigMoveInput,
+  type PromptConfigRemoveInput,
+  type PromptConfigsView as PromptConfigsViewValue,
+  type PromptConfigUpdateInput,
+  type PromptLibrarySeedResult as PromptLibrarySeedResultValue,
+  type Selection as SelectionValue,
+  type SetDefaultModelInput,
+  type SetDefaultPromptInput,
 } from '@/contract';
 
 import { sendMessage } from './messaging';
@@ -28,6 +42,18 @@ export async function saveGeneralSettings(
   return GeneralSettings.parse(await sendMessage('settings.save', patch));
 }
 
+export async function loadSelection(): Promise<SelectionValue> {
+  return Selection.parse(await sendMessage('selection.load', undefined));
+}
+
+export async function setDefaultModel(input: SetDefaultModelInput): Promise<SelectionValue> {
+  return Selection.parse(await sendMessage('selection.setDefaultModel', input));
+}
+
+export async function setDefaultPrompt(input: SetDefaultPromptInput): Promise<SelectionValue> {
+  return Selection.parse(await sendMessage('selection.setDefaultPrompt', input));
+}
+
 export async function loadModelConfigs(): Promise<ModelConfigsViewValue> {
   return ModelConfigsView.parse(await sendMessage('model-configs.load', undefined));
 }
@@ -42,12 +68,47 @@ export async function updateModelConfig(
   return ModelConfigsView.parse(await sendMessage('model-configs.update', input));
 }
 
+/** Removal reports the selection as well: it is the only change that can move a default. */
 export async function removeModelConfig(
   input: ModelConfigRemoveInput,
-): Promise<ModelConfigsViewValue> {
-  return ModelConfigsView.parse(await sendMessage('model-configs.remove', input));
+): Promise<ModelConfigRemoveResult> {
+  return ModelConfigRemoveResult.parse(await sendMessage('model-configs.remove', input));
 }
 
 export async function moveModelConfig(input: ModelConfigMoveInput): Promise<ModelConfigsViewValue> {
   return ModelConfigsView.parse(await sendMessage('model-configs.move', input));
+}
+
+export async function loadPromptConfigs(): Promise<PromptConfigsViewValue> {
+  return PromptConfigsView.parse(await sendMessage('prompt-configs.load', undefined));
+}
+
+export async function addPromptConfig(
+  input: PromptConfigAddInput,
+): Promise<PromptConfigsViewValue> {
+  return PromptConfigsView.parse(await sendMessage('prompt-configs.add', input));
+}
+
+export async function updatePromptConfig(
+  input: PromptConfigUpdateInput,
+): Promise<PromptConfigsViewValue> {
+  return PromptConfigsView.parse(await sendMessage('prompt-configs.update', input));
+}
+
+export async function removePromptConfig(
+  input: PromptConfigRemoveInput,
+): Promise<PromptConfigRemoveResult> {
+  return PromptConfigRemoveResult.parse(await sendMessage('prompt-configs.remove', input));
+}
+
+export async function movePromptConfig(
+  input: PromptConfigMoveInput,
+): Promise<PromptConfigsViewValue> {
+  return PromptConfigsView.parse(await sendMessage('prompt-configs.move', input));
+}
+
+export async function ensurePromptLibrary(): Promise<PromptLibrarySeedResultValue> {
+  return PromptLibrarySeedResult.parse(
+    await sendMessage('prompt-configs.ensureLibrary', undefined),
+  );
 }

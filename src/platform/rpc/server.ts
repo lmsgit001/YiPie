@@ -5,9 +5,20 @@ import {
   ModelConfigMoveInput,
   ModelConfigRemoveInput,
   ModelConfigUpdateInput,
+  PromptConfigAddInput,
+  PromptConfigMoveInput,
+  PromptConfigRemoveInput,
+  PromptConfigUpdateInput,
+  SetDefaultModelInput,
+  SetDefaultPromptInput,
   type GeneralSettings as GeneralSettingsValue,
   type GeneralSettingsPatch as GeneralSettingsPatchValue,
+  type ModelConfigRemoveResult as ModelConfigRemoveResultValue,
   type ModelConfigsView as ModelConfigsViewValue,
+  type PromptConfigRemoveResult as PromptConfigRemoveResultValue,
+  type PromptConfigsView as PromptConfigsViewValue,
+  type PromptLibrarySeedResult as PromptLibrarySeedResultValue,
+  type Selection as SelectionValue,
 } from '@/contract';
 
 import { onMessage } from './messaging';
@@ -23,19 +34,28 @@ import type { z } from 'zod';
 export interface RpcHandlers {
   loadGeneralSettings: () => Promise<GeneralSettingsValue>;
   saveGeneralSettings: (patch: GeneralSettingsPatchValue) => Promise<GeneralSettingsValue>;
+  loadSelection: () => Promise<SelectionValue>;
+  setDefaultModel: (input: SetDefaultModelInput) => Promise<SelectionValue>;
+  setDefaultPrompt: (input: SetDefaultPromptInput) => Promise<SelectionValue>;
   loadModelConfigs: () => Promise<ModelConfigsViewValue>;
   addModelConfig: (input: ModelConfigAddInput) => Promise<ModelConfigsViewValue>;
   updateModelConfig: (input: ModelConfigUpdateInput) => Promise<ModelConfigsViewValue>;
-  removeModelConfig: (input: ModelConfigRemoveInput) => Promise<ModelConfigsViewValue>;
+  removeModelConfig: (input: ModelConfigRemoveInput) => Promise<ModelConfigRemoveResultValue>;
   moveModelConfig: (input: ModelConfigMoveInput) => Promise<ModelConfigsViewValue>;
+  loadPromptConfigs: () => Promise<PromptConfigsViewValue>;
+  addPromptConfig: (input: PromptConfigAddInput) => Promise<PromptConfigsViewValue>;
+  updatePromptConfig: (input: PromptConfigUpdateInput) => Promise<PromptConfigsViewValue>;
+  removePromptConfig: (input: PromptConfigRemoveInput) => Promise<PromptConfigRemoveResultValue>;
+  movePromptConfig: (input: PromptConfigMoveInput) => Promise<PromptConfigsViewValue>;
+  ensurePromptLibrary: () => Promise<PromptLibrarySeedResultValue>;
 }
 
 /**
  * Parse an incoming payload, naming the method that was rejected.
  *
- * Every mutating handler goes through this, so "forgot to validate" is not a
- * failure mode this layer can have — the registration below is the only place a
- * handler is attached, and the parse is not optional there.
+ * Every handler that takes input goes through this, so "forgot to validate" is
+ * not a failure mode this layer can have — the registration below is the only
+ * place a handler is attached, and the parse is not optional there.
  */
 function parseInput<S extends z.ZodType>(schema: S, method: string, data: unknown): z.output<S> {
   const parsed = schema.safeParse(data);
@@ -49,55 +69,85 @@ function parseInput<S extends z.ZodType>(schema: S, method: string, data: unknow
   return parsed.data;
 }
 
+/** Trust check + input parse, applied once per method instead of once per line. */
+function guarded<S extends z.ZodType, R>(
+  method: string,
+  schema: S,
+  handler: (input: z.output<S>) => Promise<R>,
+): (message: { sender: unknown; data: unknown }) => Promise<R> {
+  return (message) => {
+    assertTrustedSender(message.sender);
+    return handler(parseInput(schema, method, message.data));
+  };
+}
+
+/** Trust check for a method that takes no input. */
+function guardedNoInput<R>(
+  handler: () => Promise<R>,
+): (message: { sender: unknown }) => Promise<R> {
+  return (message) => {
+    assertTrustedSender(message.sender);
+    return handler();
+  };
+}
+
 /**
  * Register the control plane. Every handler gets the trust check and an input
  * parse; no handler is allowed to opt out.
  */
 export function registerRpcHandlers(handlers: RpcHandlers): void {
-  onMessage('settings.load', async (message) => {
-    assertTrustedSender(message.sender);
-    return handlers.loadGeneralSettings();
-  });
+  onMessage('settings.load', guardedNoInput(handlers.loadGeneralSettings));
+  onMessage(
+    'settings.save',
+    guarded('settings.save', GeneralSettingsPatch, handlers.saveGeneralSettings),
+  );
 
-  onMessage('settings.save', async (message) => {
-    assertTrustedSender(message.sender);
-    return handlers.saveGeneralSettings(
-      parseInput(GeneralSettingsPatch, 'settings.save', message.data),
-    );
-  });
+  onMessage('selection.load', guardedNoInput(handlers.loadSelection));
+  onMessage(
+    'selection.setDefaultModel',
+    guarded('selection.setDefaultModel', SetDefaultModelInput, handlers.setDefaultModel),
+  );
+  onMessage(
+    'selection.setDefaultPrompt',
+    guarded('selection.setDefaultPrompt', SetDefaultPromptInput, handlers.setDefaultPrompt),
+  );
 
-  onMessage('model-configs.load', async (message) => {
-    assertTrustedSender(message.sender);
-    return handlers.loadModelConfigs();
-  });
+  onMessage('model-configs.load', guardedNoInput(handlers.loadModelConfigs));
+  onMessage(
+    'model-configs.add',
+    guarded('model-configs.add', ModelConfigAddInput, handlers.addModelConfig),
+  );
+  onMessage(
+    'model-configs.update',
+    guarded('model-configs.update', ModelConfigUpdateInput, handlers.updateModelConfig),
+  );
+  onMessage(
+    'model-configs.remove',
+    guarded('model-configs.remove', ModelConfigRemoveInput, handlers.removeModelConfig),
+  );
+  onMessage(
+    'model-configs.move',
+    guarded('model-configs.move', ModelConfigMoveInput, handlers.moveModelConfig),
+  );
 
-  onMessage('model-configs.add', async (message) => {
-    assertTrustedSender(message.sender);
-    return handlers.addModelConfig(
-      parseInput(ModelConfigAddInput, 'model-configs.add', message.data),
-    );
-  });
-
-  onMessage('model-configs.update', async (message) => {
-    assertTrustedSender(message.sender);
-    return handlers.updateModelConfig(
-      parseInput(ModelConfigUpdateInput, 'model-configs.update', message.data),
-    );
-  });
-
-  onMessage('model-configs.remove', async (message) => {
-    assertTrustedSender(message.sender);
-    return handlers.removeModelConfig(
-      parseInput(ModelConfigRemoveInput, 'model-configs.remove', message.data),
-    );
-  });
-
-  onMessage('model-configs.move', async (message) => {
-    assertTrustedSender(message.sender);
-    return handlers.moveModelConfig(
-      parseInput(ModelConfigMoveInput, 'model-configs.move', message.data),
-    );
-  });
+  onMessage('prompt-configs.load', guardedNoInput(handlers.loadPromptConfigs));
+  onMessage(
+    'prompt-configs.add',
+    guarded('prompt-configs.add', PromptConfigAddInput, handlers.addPromptConfig),
+  );
+  onMessage(
+    'prompt-configs.update',
+    guarded('prompt-configs.update', PromptConfigUpdateInput, handlers.updatePromptConfig),
+  );
+  onMessage(
+    'prompt-configs.remove',
+    guarded('prompt-configs.remove', PromptConfigRemoveInput, handlers.removePromptConfig),
+  );
+  onMessage(
+    'prompt-configs.move',
+    guarded('prompt-configs.move', PromptConfigMoveInput, handlers.movePromptConfig),
+  );
+  onMessage('prompt-configs.ensureLibrary', guardedNoInput(handlers.ensurePromptLibrary));
 }
 
 /** Re-exported so the background can build its handler map from one import. */
