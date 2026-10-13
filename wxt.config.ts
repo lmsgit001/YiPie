@@ -10,10 +10,16 @@ export default defineConfig({
     name: '一瞥 Yipie',
     description:
       'Summarize any webpage with your own LLM API key. Local-only, no backend, no telemetry.',
-    // Deliberately minimal. Host permissions for model endpoints are requested
-    // per-origin at runtime (optional_host_permissions) once the user adds a
-    // model config, so installing the extension grants access to nothing.
+    // Deliberately minimal: installing the extension grants access to nothing.
+    // `optional_host_permissions` is a *declaration* of what we may ask for
+    // later, not a grant — the user still sees a prompt per origin.
     permissions: ['storage'],
+    // Host permissions are requested one origin at a time, when the user adds a
+    // model (`platform/model/policy.ts`). Chrome only lets us ask for an origin
+    // that the manifest mentions, so the two schemes are declared here as
+    // *optional* — nothing is granted at install time, and `permissions.request`
+    // narrows it to the endpoint the user actually configured.
+    optional_host_permissions: ['http://*/*', 'https://*/*'],
   },
   vite: () => ({
     plugins: [tailwindcss()],

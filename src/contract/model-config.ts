@@ -143,3 +143,134 @@ export function classifyModelConfigRows(rows: readonly unknown[]): ModelConfigsV
 export function toStoredRows(view: ModelConfigsView): unknown[] {
   return [...view.models, ...view.unrecognized];
 }
+
+/**
+ * What the "add a model" form needs to know about a provider, and the shortcuts
+ * it offers, live here rather than in the UI: they are product data, and the
+ * export / import path already treats stored configs as the source of truth.
+ *
+ * Every entry below speaks the same OpenAI-compatible protocol — v1 has exactly
+ * one wire protocol (OQ-7), so a preset is a label plus a base URL and adding
+ * one attaches no code path. That is also why this table does not belong in the
+ * roadmap's "add a provider" category: there is nothing to implement.
+ *
+ * The labels are UI text shipped as data, the same tradeoff the seeded prompt
+ * library makes (see prompt-config.ts): proper nouns mostly need no translation,
+ * and phase 6 can move them into `_locales` if it turns out they do.
+ */
+export const ProviderInfo = z.object({
+  label: z.string().min(1),
+  /** Drives the form's "leave empty for a local server" hint, not enforcement. */
+  requiresApiKey: z.boolean(),
+  defaultBaseURL: z.string().min(1),
+});
+
+export type ProviderInfo = z.infer<typeof ProviderInfo>;
+
+export const PROVIDER_INFO: Record<ProviderId, ProviderInfo> = {
+  'openai-compatible': {
+    label: 'OpenAI 兼容',
+    requiresApiKey: true,
+    defaultBaseURL: 'https://api.openai.com/v1',
+  },
+  ollama: {
+    label: 'Ollama（本地）',
+    requiresApiKey: false,
+    defaultBaseURL: 'http://localhost:11434/v1',
+  },
+};
+
+export const BaseURLPreset = z.object({
+  id: z.string().min(1),
+  label: z.string().min(1),
+  providerId: ProviderId,
+  baseURL: z.string().min(1),
+});
+
+export type BaseURLPreset = z.infer<typeof BaseURLPreset>;
+
+/**
+ * A short, curated list rather than the forty-odd endpoints the previous project
+ * shipped: every entry costs bytes in the background bundle, and the first field
+ * is editable — a preset is a starting point, not a whitelist.
+ */
+export const BASE_URL_PRESETS: readonly BaseURLPreset[] = [
+  {
+    id: 'openai',
+    label: 'OpenAI',
+    providerId: 'openai-compatible',
+    baseURL: 'https://api.openai.com/v1',
+  },
+  {
+    id: 'deepseek',
+    label: 'DeepSeek',
+    providerId: 'openai-compatible',
+    baseURL: 'https://api.deepseek.com/v1',
+  },
+  {
+    id: 'moonshot-cn',
+    label: 'Kimi（月之暗面）',
+    providerId: 'openai-compatible',
+    baseURL: 'https://api.moonshot.cn/v1',
+  },
+  {
+    id: 'moonshot-intl',
+    label: 'Kimi Global',
+    providerId: 'openai-compatible',
+    baseURL: 'https://api.moonshot.ai/v1',
+  },
+  {
+    id: 'zhipu',
+    label: '智谱 BigModel',
+    providerId: 'openai-compatible',
+    baseURL: 'https://open.bigmodel.cn/api/paas/v4',
+  },
+  {
+    id: 'dashscope-cn',
+    label: '阿里云百炼',
+    providerId: 'openai-compatible',
+    baseURL: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+  },
+  {
+    id: 'dashscope-intl',
+    label: '阿里云百炼（国际）',
+    providerId: 'openai-compatible',
+    baseURL: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+  },
+  {
+    id: 'volcengine',
+    label: '火山引擎方舟',
+    providerId: 'openai-compatible',
+    baseURL: 'https://ark.cn-beijing.volces.com/api/v3',
+  },
+  {
+    id: 'siliconflow',
+    label: '硅基流动',
+    providerId: 'openai-compatible',
+    baseURL: 'https://api.siliconflow.cn/v1',
+  },
+  {
+    id: 'openrouter',
+    label: 'OpenRouter',
+    providerId: 'openai-compatible',
+    baseURL: 'https://openrouter.ai/api/v1',
+  },
+  {
+    id: 'groq',
+    label: 'Groq',
+    providerId: 'openai-compatible',
+    baseURL: 'https://api.groq.com/openai/v1',
+  },
+  {
+    id: 'lmstudio',
+    label: 'LM Studio（本地）',
+    providerId: 'openai-compatible',
+    baseURL: 'http://localhost:1234/v1',
+  },
+  {
+    id: 'ollama-local',
+    label: 'Ollama（本地）',
+    providerId: 'ollama',
+    baseURL: 'http://localhost:11434/v1',
+  },
+];

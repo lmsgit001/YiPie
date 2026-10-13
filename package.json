@@ -19,7 +19,9 @@
     "postinstall": "wxt prepare"
   },
   "dependencies": {
+    "@ai-sdk/openai-compatible": "2.0.81",
     "@webext-core/messaging": "^4.0.0",
+    "ai": "6.0.304",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "zod": "^4.6.7",
