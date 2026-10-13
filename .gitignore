@@ -1,0 +1,12 @@
+node_modules
+.output
+.wxt
+stats.html
+.env*
+*.log
+coverage
+test-results
+playwright-report
+.DS_Store
+.vscode/*
+!.vscode/extensions.json

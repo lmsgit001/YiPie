@@ -1,0 +1,43 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+/*
+ * Design tokens live here and nowhere else: Tailwind v4 is CSS-first, so the
+ * "one place for colours and type" rule from the previous project is now
+ * something the framework enforces instead of a convention people remember.
+ */
+@theme {
+  --color-canvas: oklch(99% 0.003 250);
+  --color-canvas-muted: oklch(96.5% 0.005 250);
+  --color-ink: oklch(21% 0.02 260);
+  --color-ink-muted: oklch(52% 0.02 260);
+  --color-line: oklch(90% 0.008 260);
+  --color-brand: oklch(55% 0.16 262);
+  --color-brand-contrast: oklch(98% 0.01 262);
+
+  --font-sans:
+    ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'PingFang SC', 'Hiragino Sans GB',
+    'Microsoft YaHei', sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: oklch(19% 0.01 260);
+    --color-canvas-muted: oklch(24% 0.012 260);
+    --color-ink: oklch(96% 0.006 260);
+    --color-ink-muted: oklch(72% 0.012 260);
+    --color-line: oklch(32% 0.014 260);
+    --color-brand: oklch(72% 0.13 262);
+    --color-brand-contrast: oklch(20% 0.02 262);
+  }
+}
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  background: var(--color-canvas);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
