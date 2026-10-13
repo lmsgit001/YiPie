@@ -12,6 +12,7 @@ import {
   SetDefaultModelInput,
   SetDefaultPromptInput,
   type GeneralSettings as GeneralSettingsValue,
+  type MigrationReport as MigrationReportValue,
   type GeneralSettingsPatch as GeneralSettingsPatchValue,
   type ModelConfigRemoveResult as ModelConfigRemoveResultValue,
   type ModelConfigsView as ModelConfigsViewValue,
@@ -48,6 +49,7 @@ export interface RpcHandlers {
   removePromptConfig: (input: PromptConfigRemoveInput) => Promise<PromptConfigRemoveResultValue>;
   movePromptConfig: (input: PromptConfigMoveInput) => Promise<PromptConfigsViewValue>;
   ensurePromptLibrary: () => Promise<PromptLibrarySeedResultValue>;
+  runMigrations: () => Promise<MigrationReportValue>;
 }
 
 /**
@@ -101,6 +103,8 @@ export function registerRpcHandlers(handlers: RpcHandlers): void {
     'settings.save',
     guarded('settings.save', GeneralSettingsPatch, handlers.saveGeneralSettings),
   );
+
+  onMessage('migration.run', guardedNoInput(handlers.runMigrations));
 
   onMessage('selection.load', guardedNoInput(handlers.loadSelection));
   onMessage(

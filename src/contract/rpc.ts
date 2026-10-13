@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { GeneralSettings, GeneralSettingsPatch } from './general-settings';
+import { MigrationReport } from './migration';
 import { ModelConfigsView } from './model-config';
 import {
   ModelConfigAddInput,
@@ -36,6 +37,11 @@ export const rpcContract = {
   'settings.save': {
     input: GeneralSettingsPatch,
     output: GeneralSettings,
+    write: true,
+  },
+  'migration.run': {
+    input: z.void(),
+    output: MigrationReport,
     write: true,
   },
   'selection.load': {
@@ -117,6 +123,7 @@ export type RpcMethod = keyof typeof rpcContract;
 export interface ProtocolMap {
   'settings.load': () => Promise<GeneralSettings>;
   'settings.save': (patch: GeneralSettingsPatch) => Promise<GeneralSettings>;
+  'migration.run': () => Promise<MigrationReport>;
   'selection.load': () => Promise<Selection>;
   'selection.setDefaultModel': (input: SetDefaultModelInput) => Promise<Selection>;
   'selection.setDefaultPrompt': (input: SetDefaultPromptInput) => Promise<Selection>;

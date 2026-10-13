@@ -1,11 +1,13 @@
 import { defineBackground } from 'wxt/utils/define-background';
 
+import { outcomesNeedingAttention } from '@/contract';
 import { createLogger } from '@/platform/logger';
 import { registerRpcHandlers } from '@/platform/rpc/server';
 import {
   loadGeneralSettings,
   saveGeneralSettings,
 } from '@/platform/settings/general-settings-service';
+import { runMigrations } from '@/platform/settings/migration-service';
 import {
   addModelConfig,
   loadModelConfigs,
@@ -79,7 +81,20 @@ export default defineBackground(() => {
     },
     movePromptConfig: (input) => movePromptConfig(input, wxtStore),
     ensurePromptLibrary: () => seedPromptLibraryIfNeeded(wxtStore),
+
+    runMigrations: () => runMigrations(wxtStore),
   });
+
+  // Bring storage up to this build's schema versions. There is nothing to do while every
+  // key is at version 1, but a downgraded install or a damaged payload surfaces here first:
+  // logged now, and available to the UI through `migration.run`.
+  void runMigrations(wxtStore)
+    .then((report) => {
+      for (const outcome of outcomesNeedingAttention(report)) {
+        logger.warn(`${outcome.label}: ${outcome.status}`, outcome.issues);
+      }
+    })
+    .catch((error: unknown) => logger.error('migration check failed', error));
 
   logger.info('background ready');
 });

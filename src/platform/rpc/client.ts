@@ -1,5 +1,6 @@
 import {
   GeneralSettings,
+  MigrationReport,
   ModelConfigRemoveResult,
   ModelConfigsView,
   PromptConfigRemoveResult,
@@ -8,6 +9,7 @@ import {
   Selection,
   type GeneralSettings as GeneralSettingsValue,
   type GeneralSettingsPatch,
+  type MigrationReport as MigrationReportValue,
   type ModelConfigAddInput,
   type ModelConfigMoveInput,
   type ModelConfigRemoveInput,
@@ -40,6 +42,11 @@ export async function saveGeneralSettings(
   patch: GeneralSettingsPatch,
 ): Promise<GeneralSettingsValue> {
   return GeneralSettings.parse(await sendMessage('settings.save', patch));
+}
+
+/** Bring storage up to this build's versions; safe to call on every page load. */
+export async function runMigrations(): Promise<MigrationReportValue> {
+  return MigrationReport.parse(await sendMessage('migration.run', undefined));
 }
 
 export async function loadSelection(): Promise<SelectionValue> {
