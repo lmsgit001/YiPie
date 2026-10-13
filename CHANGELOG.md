@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-### 模型配置（阶段 1 · 第一片）
+### 阶段 1 —— 契约与平台层补全
+
+#### 模型配置
 
 - `src/contract/model-config.ts`：`ModelConfig` 契约（类型 / 运行时校验 / 存储信封同源）+ `ModelConfigPatch`
   - 行的归类与回写（`classifyModelConfigRows` / `toStoredRows`）
@@ -11,6 +13,32 @@
   `unrecognized` 并原样写回；读不出来的数据只降级不覆盖
 - RPC：`contract/rpc.ts` 登记 5 个方法，`platform/rpc/server.ts` 统一入参校验，`platform/rpc/client.ts` 校验返回
 - 测试新增 21 个用例（契约 10 + 服务 11），全仓 41 个
+
+#### Prompt 模板与默认项
+
+- `src/contract/prompt-config.ts`：`PromptConfig` 契约 + 播种库（沿用旧项目那三份中文预设，助手名改为「一瞥」）
+  - `PROMPT_VARIABLES`（只声明 pipeline 真能填的变量）
+- `src/domain/prompt/template.ts`：`{{var}}` 子集的变量提取与「本构建填不了的名字」检查（OQ-4）
+- `src/platform/settings/prompt-configs-service.ts`：读 / 变更 / 按 id 幂等播种；交互路径拒绝未知变量，
+  导入路径只提示（新版本写的备份必须还能读）
+- `src/contract/selection.ts` + `src/platform/settings/selection-service.ts`：默认项读写、悬空默认的
+  读取时解析（`resolveDefaultId`）、列表收缩后的回退（`reconcileDefaults`，无变化就不写）
+- 删除返回 `{ configs, selection }`，让 UI 能明确告知默认项被顶替成了哪个，而不是悄悄换掉
+
+#### 迁移机制
+
+- `src/contract/migration.ts` + `src/platform/settings/migration-service.ts`：逐 key 比较各自的信封版本——
+  只前进、链上有洞就一步都不动、迁移产物必须先能被本构建读回，否则不写；不需要迁移时一次写都不发生
+- 更高版本一律不覆盖（降级安装），进入「需要告知人」的集合；background 在 SW 启动时跑一次并记日志
+
+#### 导入 / 导出
+
+- `src/contract/transfer.ts` + `src/platform/settings/transfer-service.ts`：默认剔除 `apiKey` / `headers` /
+  `extraBody`；文件里的行按宽松 `headers` 解析（一个坏值只损失它自己、不损失整行，且规则写在契约里）；
+  全部行都认不出 → 整体拒绝；存储里已有的、读不懂的行保留；文件里的默认项按实际落地的行重新校准
+- notice 是结构化的（code + 数字 / 名字），文案归 UI——OQ-3 承诺了阶段 6 的多语言
+
+- 测试合计 128 个用例（15 个文件），RPC 共 20 个方法
 
 ### 修复
 
