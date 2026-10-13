@@ -40,6 +40,33 @@
 
 - 测试合计 128 个用例（15 个文件），RPC 共 20 个方法
 
+### 阶段 2 —— Provider 与权限
+
+- `src/domain/model/base-url.ts`：base URL 归一化（Ollama 的 `/api` → `/v1`、丢弃误粘的 `/chat/completions`、
+  尾斜杠）、`parseBaseURL`、`originPattern` 与 `findBaseURLPreset`（忽略协议 / 大小写 / 尾斜杠 / `/v1`，
+  同 host 多 preset 时优先路径匹配）
+- `src/contract/model-config.ts`：Provider 描述表与 13 个快捷 base URL preset（数据，不是代码路径）
+- `src/domain/model/errors.ts`：错误分类（auth / quota / rate-limit / bad-request / server / network /
+  timeout / aborted / too-long / unknown）+ 是否可重试 + 凭据脱敏；不引入 SDK 类型，鸭子类型读
+  `statusCode` / `name` / `code` / `cause` / `lastError`
+- `src/platform/model/provider.ts`：`createLanguageModelFromConfig`（Ollama 走同一个 OpenAI 兼容客户端、
+  空 key 补占位、header 过滤、`extraBody` 经 `transformRequestBody` 合并且不能改协议键、
+  配置的 temperature / maxOutputTokens 作为每次调用的默认值）、`MODEL_CALL_SETTINGS`（一次重试）
+- `src/platform/model/usage.ts`：把服务商返回的 usage 归一（新老字段名、缺 total 时补算、
+  `-1` / NaN 一律丢弃而不是显示成数字）
+- `src/platform/model/policy.ts`：按 origin 申请 / 检查 / 回收 host 权限，失败降级为 `denied` 而不是抛错
+- `wxt.config.ts` 增加 `optional_host_permissions` 声明（声明 ≠ 授权）；`tests/manifest.test.ts` 钉住
+  「安装时零站点权限」与「两个 scheme 已声明」
+- `tests/manual/live-probe.test.ts`：env 门控的真实调用探针（未设环境变量时整体 skip，闸门与 CI 不联网）
+- 测试新增 61 个用例（15 → 22 个文件），全仓 189 passed + 1 skipped（那条是探针）
+
+**实测出来的两个 SDK 坑（都在阶段 2 修掉）**
+
+- AI SDK 的 `RetryError` 把真实错误放在 `lastError` / `errors` 里，**不是 `cause`**：不处理时「连接被拒」
+  会被分类成 `unknown`，用户看不到任何可行动信息
+- 非 latin-1 的 header 值会让 `new Headers()` 抛 ByteString 错，异常来自 SDK 深处且不带 header 名 ——
+  这类值现在被丢弃并记一条日志，而不是让整个请求以一种看不懂的方式失败
+
 ### 修复
 
 - **`import-x/no-restricted-paths` 此前一直空转**：默认解析器不认 `.ts`，也读不到 tsconfig 的 `@/*` 映射，
