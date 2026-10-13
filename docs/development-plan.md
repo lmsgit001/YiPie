@@ -1,6 +1,6 @@
 # 一瞥 Yipie · 开发计划
 
-> **状态**：阶段 0 已完成并验证；阶段 1 待启动
+> **状态**：阶段 0 已完成并验证；阶段 1 待启动（OQ-1～11 已定案，见第 11 节）
 > **权威性**：本文档是路线图的唯一权威来源。`README.md` 的路线图表格、`CHANGELOG.md` 的条目都是摘要，与本文冲突时以本文为准。
 > **维护规则**：调整阶段划分、交付物或验收标准，必须在本文内改，并在附录 D 记一行；不要只改 README。
 
@@ -31,6 +31,7 @@
 - 精确分词（理由见 `AGENTS.md`「不做精确分词」；如需精确，走 offscreen document，见 OQ-9）
 - 移动端 / 桌面端 / 浏览器以外的形态
 - 为了「所有站点都能注入」而索取 `<all_urls>`
+- 原生 Anthropic / Google provider（`@ai-sdk/anthropic` / `@ai-sdk/google`）：v1 只做 `openai-compatible` 一家，Claude / Gemini 经 OpenRouter 这类兼容端点使用（OQ-7）
 
 ### 1.3 与旧项目 KuaiKan 的关系
 
@@ -45,7 +46,7 @@ yipie 是**重写**，不是分支：产品形态（网页总结扩展）保留�
 | `background.js` 2.6 MB，冷启动解析 2.22 MB 词表      | 近似估算 + 体积预算（第 9 节）                         |
 | `.output` 里的 manifest 落后源码两个版本没人发现     | 发版流程含产物校验（阶段 6）                           |
 
-是否提供「从 KuaiKan 迁移已有配置」的一次性工具，见 OQ-8。
+**不做**「从 KuaiKan 迁移已有配置」的导入器（OQ-8 已定）：yipie 只提供自己的导入 / 导出（备份与搬迁），不解析旧项目的导出 JSON，配置由用户手工重建。
 
 ## 2. 架构基线（硬约束及其强制手段）
 
@@ -65,15 +66,15 @@ yipie 是**重写**，不是分支：产品形态（网页总结扩展）保留�
 
 规模是相对量级（S ≈ 一个纵切片，M ≈ 数个纵切片，L ≈ 需要多轮迭代），不是工时承诺。
 
-| 阶段 | 主题                  | 关键交付物                                                                 | 规模 | 需要你手工验证           | 状态   |
-| ---- | --------------------- | -------------------------------------------------------------------------- | ---- | ------------------------ | ------ |
-| 0    | 走骨架                | 分层架构、契约层、存储层、RPC 控制面、工具链与 CI                          | S    | 否                       | ✅     |
-| 1    | 契约与平台层补全      | 模型配置 / Prompt 模板 / 默认选择的 schema、变更面 RPC、迁移机制、导入导出 | M    | 否                       | 待启动 |
-| 2    | Provider 与权限       | `createLanguageModelFromConfig`、按 origin 申请权限、错误映射、usage 采集  | M    | 是（真实 API Key 一次）  | 未开始 |
-| 3    | 流式通道              | runtime port 桥、带版本握手的帧协议、abort 与清理、DEV-only 计时帧         | M    | 是（真实总结一次）       | 未开始 |
-| 4    | 内容脚本与面板        | 正文提取管线、近似预算与裁剪、Shadow DOM 面板、快照恢复、右键菜单          | L    | 否（E2E 可覆盖）         | 未开始 |
-| 5    | 设置页与 popup 完整化 | 模型 / Prompt CRUD UI、导入导出 UI、通用设置、日志级别                     | M    | 部分                     | 未开始 |
-| 6    | 硬化与分发            | 无障碍与 i18n、体积与权限审计、发版流程、Release / 上架                    | M    | 是（分发渠道决定，OQ-1） | 未开始 |
+| 阶段 | 主题                  | 关键交付物                                                                                          | 规模 | 需要你手工验证          | 状态   |
+| ---- | --------------------- | --------------------------------------------------------------------------------------------------- | ---- | ----------------------- | ------ |
+| 0    | 走骨架                | 分层架构、契约层、存储层、RPC 控制面、工具链与 CI                                                   | S    | 否                      | ✅     |
+| 1    | 契约与平台层补全      | 模型配置 / Prompt 模板 / 默认选择的 schema、变更面 RPC、迁移机制、导入导出                          | M    | 否                      | 待启动 |
+| 2    | Provider 与权限       | `createLanguageModelFromConfig`（仅 `openai-compatible`）、按 origin 申请权限、错误映射、usage 采集 | M    | 是（真实 API Key 一次） | 未开始 |
+| 3    | 流式通道              | runtime port 桥、带版本握手的帧协议、abort 与清理、DEV-only 计时帧                                  | M    | 是（真实总结一次）      | 未开始 |
+| 4    | 内容脚本与面板        | 正文提取管线、近似预算与裁剪、Shadow DOM 面板、快照恢复、右键菜单                                   | L    | 否（E2E 可覆盖）        | 未开始 |
+| 5    | 设置页与 popup 完整化 | 模型 / Prompt CRUD UI、导入导出 UI、通用设置、日志级别                                              | M    | 部分                    | 未开始 |
+| 6    | 硬化与分发            | 无障碍与 i18n、体积与权限审计、隐私政策与逐权限说明、发版流程、Release 附件                         | M    | 是（发布前冒烟一次）    | 未开始 |
 
 依赖顺序是线性的：1 → 2 → 3 → 4 → 5 → 6。阶段 1 与阶段 2 之间可以并行推进一部分（2 的纯 domain 部分 `base-url.ts` 不依赖 1 的存储改动），但**提交仍按阶段走**，避免一个提交里混两类风险。
 
@@ -174,11 +175,12 @@ e2e/               smoke.spec.ts（真实 Chromium 加载扩展）
 
 **关键设计决定**
 
-1. **`providerId: 'ollama'` 走 OpenAI 兼容端点**，base URL 统一成 `.../v1`，读取时就把旧式 `.../api` 就地改写。理由：`ollama-ai-provider` 仍停留在 specification v1，AI SDK 6 会在运行时抛 `AI_UnsupportedModelVersionError`。**不引入实现 spec v1 的 provider 包**——这条要写成单测断言，而不是注释。
+1. **`providerId: 'ollama'` 走 OpenAI 兼容端点**，base URL 统一成 `.../v1`，读取时就把旧式 `.../api` 就地改写。理由：`ollama-ai-provider` 停在 specification v1，不属于 AI SDK 6 的目标版本（v3）——官方排错文档里那个 `AI_UnsupportedModelVersionError` 案例是**对着 AI SDK 5** 的（AI SDK 5 要求 v2），AI SDK 6 的精确异常官方并未写明，所以本条不引用未验证的异常。换包也不通：`ollama-ai-provider-v2` 当前的 `latest`（4.0.1）面向 AI SDK 7 / Provider V4，明确不支持 5 / 6。**不引入 spec v1 的 provider 包**，断言写成「provider 的 spec 版本 ≥ v2」——注意 `@ai-sdk/openai-compatible` 目前是 **2.x（v2 spec）**，在 AI SDK 6 下走 compatibility mode（社区 issue #12615 记录过相关警告），因此 `ai` 与各 `@ai-sdk/*` 必须**锁定精确版本**，不用 `latest`。
 2. **`extraBody` / `headers` 经 provider 的自定义 fetch 合并**，不改造全局 `fetch`，避免影响扩展内其它请求。
 3. **权限按需、可回收**：添加模型时对目标 origin 调 `permissions.request({ origins })`；删除配置时尝试回收。申请失败**不阻塞保存**，而是把该模型标成「缺少访问权限」并在使用时可一键重试——用户可能只是暂时拒绝了弹窗。
 4. **不做自动重试风暴**：只有明确的「瞬时」错误（429 / 5xx / 网络）才重试一次；鉴权错误直接呈现服务商原文摘要，不猜。
 5. **凭据不进日志**：日志脱敏规则与错误映射放在同一处，避免两套规则漂移。
+6. **provider 覆盖面（OQ-7 已定）**：v1 只做 `openai-compatible` 一家，原生 Anthropic / Google 不做（列在 1.2 非目标）。加 provider 之前先量 `background.js` 的体积增量：provider 包直接进后台，预算是 150 kB，阶段 0 只用了 77.90 kB。
 
 **验收标准**
 
@@ -187,6 +189,7 @@ e2e/               smoke.spec.ts（真实 Chromium 加载扩展）
 - [ ] 错误映射单测：401 / 403 / 429 / 5xx / 超时 / 网络中断各有独立断言
 - [ ] 一条真实调用（**需要你提供 Key 并手工执行一次**；我不会读取或写入你的密钥）
 - [ ] `manifest.json` 仍未出现 `host_permissions` 静态声明
+- [ ] provider spec 版本断言（≥ v2），且 `ai` 与各 `@ai-sdk/*` 锁定精确版本（不用 `latest`）
 
 ### 4.4 阶段 3 —— 流式通道
 
@@ -289,12 +292,12 @@ ServerFrame =
 
 **目标**：把「能用」变成「可发布、可维护」。
 
-- **i18n**：UI 字符串从阶段 1 起就走取词函数，阶段 6 决定 `_locales` 落地范围（见 OQ-3）
+- **i18n（OQ-3 已定：落 `zh_CN` + `en`）**：UI 字符串从阶段 1 起就走取词函数；本阶段把取词函数换成 `browser.i18n.getMessage` 并落 `_locales`，**同一批**把 manifest 的 `name` / `description` 换成 `__MSG_*__` 占位符（`_locales` 只做一半会让扩展名显示成占位符字面量）
 - **无障碍**：键盘走查 + 对比度检查 + `jsx-a11y` 全绿
 - **体积闸门**：新增 `scripts/check-bundle-budget.mjs`，在 CI 里断言 `background.js` 与整包体积不超过第 9 节预算，超了就失败（旧项目的 2.6 MB 就是这样悄悄长出来的）
 - **权限审计**：逐条核对 `manifest.json` 的 `permissions` / `host_permissions` / `optional_host_permissions`，每条都要能回答「去掉它功能会怎样」
 - **发版流程**：见下方固定步骤，写进 `AGENTS.md`
-- **分发渠道**：按 OQ-1 的决定执行（GitHub Release 附件 / 商店上架材料）
+- **分发渠道（OQ-1 已定：v1 只发 GitHub Release 附件）**：商店上架不在本阶段承诺，但**隐私政策 + 逐权限说明**作为本阶段交付物先写好，上架时直接复用。注意 `optional_host_permissions` **不是**审核豁免——最小权限原则同时管 required 与 optional，商店表单要逐项说明权限用途
 
 **发版固定步骤（摘自旧项目经验，yipie 沿用并加了两条校验）**
 
@@ -400,19 +403,28 @@ ServerFrame =
 
 ## 11. 开放问题（需要你决定，附我的建议）
 
-| #     | 问题                                          | 我的建议                                                                   |
-| ----- | --------------------------------------------- | -------------------------------------------------------------------------- |
-| OQ-1  | 分发渠道：GitHub Release 附件，还是商店上架？ | 先走 Release 附件（与旧项目一致，零审核成本）；商店上架作为阶段 6 的可选项 |
-| OQ-2  | 是否需要 Firefox？                            | 先只保 Chrome / Edge；WXT 侧保留 firefox 目标但不承诺，等主线跑顺再评估    |
-| OQ-3  | 多语言范围？                                  | UI 从阶段 1 起就走取词函数，阶段 6 只落 `zh_CN` + `en` 最小集              |
-| OQ-4  | Prompt 变量渲染语法？                         | Mustache 的最小子集（只做 `{{var}}` 替换，不做逻辑），避免模板变成脚本     |
-| OQ-5  | popup 是否保留 Prompt 选择器？                | 不保留（下拉会写全局默认项，误改代价大）；Prompt 只在设置页改              |
-| OQ-6  | 是否需要侧边栏 / 多开面板？                   | 不做。单浮动面板 + popup 已经覆盖使用方式                                  |
-| OQ-7  | 是否恢复 Ollama 原生 provider？               | 不恢复，走 OpenAI 兼容（阶段 2 的实测结论）                                |
-| OQ-8  | 是否提供「从 KuaiKan 一键迁移配置」？         | 提供「导入旧项目导出的 JSON」而不是读取旧存储 key——边界清楚、可测试        |
-| OQ-9  | 是否引入精确 token 计数？                     | 不引入。若以后确实需要，走 offscreen document，绝不放进 SW                 |
-| OQ-10 | 新页面是否自动打开面板？                      | 默认关闭，由点击触发；设置里给一个开关                                     |
-| OQ-11 | 错误上报？                                    | 无遥测。错误只在面板与设置页可见                                           |
+| #     | 问题                                          | 我的建议                                                                   | 决定（2026-10-13）                                                                            |
+| ----- | --------------------------------------------- | -------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| OQ-1  | 分发渠道：GitHub Release 附件，还是商店上架？ | 先走 Release 附件（与旧项目一致，零审核成本）；商店上架作为阶段 6 的可选项 | **A：只发 GitHub Release 附件**；隐私政策 + 逐权限说明当阶段 6 交付物先写好，上架决策留到以后 |
+| OQ-2  | 是否需要 Firefox？                            | 先只保 Chrome / Edge；WXT 侧保留 firefox 目标但不承诺，等主线跑顺再评估    | **A（比原建议更严）：v1 明确不做 Firefox**，连构建目标都不留；不兼容点与可行性清单见 11.1     |
+| OQ-3  | 多语言范围？                                  | UI 从阶段 1 起就走取词函数，阶段 6 只落 `zh_CN` + `en` 最小集              | **B：采纳原建议**——阶段 6 落 `zh_CN` + `en`，且 `_locales` 与 manifest 字段本地化同批完成     |
+| OQ-4  | Prompt 变量渲染语法？                         | Mustache 的最小子集（只做 `{{var}}` 替换，不做逻辑），避免模板变成脚本     | **采纳建议**，且**不引入 `mustache` 依赖**：手写纯函数放 `domain/`                            |
+| OQ-5  | popup 是否保留 Prompt 选择器？                | 不保留（下拉会写全局默认项，误改代价大）；Prompt 只在设置页改              | **采纳建议**；popup 只读显示当前 Prompt 名 + 「去设置改」入口                                 |
+| OQ-6  | 是否需要侧边栏 / 多开面板？                   | 不做。单浮动面板 + popup 已经覆盖使用方式                                  | **采纳建议**；`sidePanel` 还会多一项权限，且与阶段 4 的「单标签页单流」冲突                   |
+| OQ-7  | 是否恢复 Ollama 原生 provider？               | 不恢复，走 OpenAI 兼容（阶段 2 的实测结论）                                | **C：阶段 2 只做 `openai-compatible`**，原生 Anthropic / Google 进 1.2 非目标                 |
+| OQ-8  | 是否提供「从 KuaiKan 一键迁移配置」？         | 提供「导入旧项目导出的 JSON」而不是读取旧存储 key——边界清楚、可测试        | **C：不做迁移器**（旧项目也只有模型有导出格式，没有 Prompt），配置由用户手工重配              |
+| OQ-9  | 是否引入精确 token 计数？                     | 不引入。若以后确实需要，走 offscreen document，绝不放进 SW                 | **采纳建议**；判定标准见 11.1                                                                 |
+| OQ-10 | 新页面是否自动打开面板？                      | 默认关闭，由点击触发；设置里给一个开关                                     | **采纳建议**                                                                                  |
+| OQ-11 | 错误上报？                                    | 无遥测。错误只在面板与设置页可见                                           | **采纳建议**；它同时决定 OQ-1 的隐私文案与 AMO 的 `gecko.data_collection_permissions: none`   |
+
+### 11.1 决定依据与已知限制（2026-10-13 核对）
+
+- **OQ-1**：`optional_host_permissions` **不是**审核豁免——最小权限原则同时适用于 required 与 optional，商店表单要逐项说明权限用途。Chrome 注册为一次性费用（官方注册页未标金额；可核实的官方数字是 2020 年博客的 US$5）；Edge 上架免费，但**没有公开的审核时限承诺**（2025-02 起的优先审核队列不是 SLA）。
+- **OQ-2**：Firefox MV3 **不支持 `background.service_worker`**（用非持久化 event page），而 WXT 在 MV3 下为 `background` entrypoint 生成的是 service worker，且 WXT 对 Firefox 的默认 manifest 版本是 MV2 —— 所以「保留目标但不承诺」等于留一条没人测的构建路径。真要做时的可行性清单：event page 回退 + Firefox 实测、AMO 签名必须有 `browser_specific_settings.gecko.id`（MV3 不会自动分配）、2025-11-03 起新提交必须声明 `gecko.data_collection_permissions`（本项目填 `none`）、提供可复现的源码 ZIP。
+- **OQ-3**：旧项目 `lib/i18n.ts`（272 行）的注释写着 “This extension is now Chinese-only (self-use fork)”，但取词函数的签名一直留着 —— 「留着取词函数、`_locales` 不做」是可持续的中间态；本仓既然承诺 en，就必须连 manifest 字段一起本地化。
+- **OQ-7**：`ollama-ai-provider` 停在 spec v1（官方 `AI_UnsupportedModelVersionError` 案例是 AI SDK 5 的）；替代包 `ollama-ai-provider-v2` 当前 `latest` 面向 AI SDK 7 / Provider V4，不支持 5 / 6。`@ai-sdk/openai-compatible` 目前是 2.x（v2 spec），在 AI SDK 6 下走 compatibility mode —— 因此锁精确版本、不用 `latest`。
+- **OQ-9 判定标准**：只有「必须本地显示用量」与「服务商不返回 `usage`」同时成立时才考虑；届时走 offscreen document，绝不放进 SW。
+- **CORS（同期改了 `AGENTS.md` 第 5 条）**：旧项目 `entrypoints/background/cors-fix.ts` 用 `declarativeNetRequest` 往响应注入 `Access-Control-Allow-Origin`，它是**给自己造出来的问题打补丁**：静态声明 `<all_urls>` 后，用户一旦把站点访问改成「在特定网站上」，Chrome 就撤销运行时 host 权限，SW 的 `fetch()` 才开始被 CORS 拦。只要扩展对该 origin 持有 host 权限，Chrome 就豁免扩展请求的 CORS 检查 —— yipie 的按-origin 授权模型天然不需要这个 hack。
 
 ## 12. 工作方式
 
@@ -496,6 +508,7 @@ CI 里这三条都不需要：`.github/workflows/quality.yml` 用 `npx playwrigh
 
 ## 附录 D —— 本文档变更记录
 
-| 日期       | 变更                                                                                          |
-| ---------- | --------------------------------------------------------------------------------------------- |
-| 2026-10-13 | 初版：阶段 0 小结与证据、阶段 1–6 计划、DoD / 测试策略 / 迁移 / 安全 / 预算 / 风险 / 开放问题 |
+| 日期       | 变更                                                                                                                                                                                                  |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-13 | 初版：阶段 0 小结与证据、阶段 1–6 计划、DoD / 测试策略 / 迁移 / 安全 / 预算 / 风险 / 开放问题                                                                                                         |
+| 2026-10-13 | OQ-1～11 定案（只发 Release 附件 / 不做 Firefox / 多语言落 `zh_CN`+`en` / 仅 `openai-compatible` / 不做 KuaiKan 迁移器）；按新证据修正阶段 2 的 spec 版本论证与审核结论；新增 11.1 决定依据与已知限制 |

@@ -64,7 +64,7 @@ manifest 目前只有 `storage`。不要为了方便加 `<all_urls>` 或 `declar
 - 模型端点的 host 权限在用户添加模型配置时按 origin 用 `permissions.request()` 申请
 - 内容脚本按需用 `scripting.executeScript` 注入，而不是在 manifest 里声明全站匹配
 
-上架审核会把「给所有响应注入 CORS 头」这类做法视为权限滥用。
+不要靠「给所有响应注入 CORS 头」（`declarativeNetRequest` 改响应头）来绕 CORS：那是给自己造出来的问题打补丁——静态声明 `<all_urls>` 之后，用户一旦把站点访问改成「在特定网站上」，Chrome 就撤销运行时 host 权限，SW 的 `fetch()` 才开始被 CORS 拦。只要扩展对该 origin 持有 host 权限，Chrome 就豁免扩展请求的 CORS 检查，所以按 origin 动态申请这条路本来就不需要它。过宽权限还违反最小权限原则（该原则同时管 required 与 optional 权限），并增加上架时的解释成本。详见 `docs/development-plan.md` 11.1。
 
 ### 6. 不做精确分词
 

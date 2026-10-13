@@ -6,6 +6,9 @@
 
 - 新增 `docs/development-plan.md`：阶段 1–6 的交付物与验收标准、测试策略、数据契约与迁移策略、
   安全与隐私清单、体积预算、风险登记表与开放问题；README 的路线图改为本文摘要
+- OQ-1～11 全部定案并记录决定（第 11 节）：只发 Release 附件、v1 不做 Firefox、多语言落 `zh_CN` + `en`、
+  阶段 2 只做 `openai-compatible`、不做 KuaiKan 兼容导入器；按核对到的新证据修正阶段 2 的 provider
+  spec 版本论证与「CORS 响应头注入被审核视为滥用」的表述，并新增 11.1 决定依据与已知限制
 
 ### 0.1.0 — walking skeleton
 
