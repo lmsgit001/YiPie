@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+### 文档
+
+- 新增 `docs/development-plan.md`：阶段 1–6 的交付物与验收标准、测试策略、数据契约与迁移策略、
+  安全与隐私清单、体积预算、风险登记表与开放问题；README 的路线图改为本文摘要
+
 ### 0.1.0 — walking skeleton
 
 - 项目骨架：WXT + React 19 + TypeScript + Tailwind v4，`src/` 分层（contract / domain / platform / entrypoints）
